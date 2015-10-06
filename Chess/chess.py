@@ -1,10 +1,10 @@
 import pygame
 
-#Next I'm looking to work on adding an event listener for a click. If the person clicks, it will check the place clicked for possible moves and display that.
+#The constant multiplying and dividing by 100 is ridiculous. I need to make it more standard, possib
 
 
 #allow for possible size shifts
-spot = 100
+SPOT = 100
 boardSize = 800
 
 class Piece(object):
@@ -14,7 +14,122 @@ class Piece(object):
 		self.identity = "basic"
 
 	def show(self): # shows the piece on the screen
-		screen.blit(self.display, (self.position[0]*spot, self.position[1]*spot))
+		screen.blit(self.display, (self.position[0]*SPOT, self.position[1]*SPOT))
+
+	def checkDiagonal(self, position): #position comes in as 0-7 values goes out the same way
+		moves = []
+		x, y = position
+		c = 1
+		searching = True
+		
+		while(searching): # Checks up and right
+			if mainBoard.hasPiece((x + c, y - c)) == None:
+				break
+			if mainBoard.hasPiece((x + c, y - c)): # if there is a piece in the spot being checked, end searching
+				if mainBoard.spaces[y-c][x+c].color != mainBoard.spaces[y][x].color: # allow taking opponents
+					moves.append(((x + c), (y - c)))
+				searching = False
+			else:
+				moves.append(((x + c), (y - c)))
+				c += 1
+
+		c = 1 #Important to reset my counters
+		searching = True
+		while(searching): # Checks up and left
+			if mainBoard.hasPiece((x - c, y - c)) == None:
+				break
+			if mainBoard.hasPiece((x - c, y - c)): # if there is a piece in the spot being checked, end searching
+				if mainBoard.spaces[y-c][x-c].color != mainBoard.spaces[y][x].color: # allow taking opponents
+					moves.append(((x - c), (y - c)))
+				searching = False
+			else:
+				moves.append(((x - c), (y - c)))
+				c += 1
+
+		c = 1
+		searching = True
+		while(searching): # Checks down and right
+			if mainBoard.hasPiece((x + c, y + c)) == None:
+				break
+			if mainBoard.hasPiece((x + c, y + c)): # if there is a piece in the spot being checked, end searching
+				if mainBoard.spaces[y+c][x+c].color != mainBoard.spaces[y][x].color: # allow taking opponents
+					moves.append(((x + c), (y + c)))
+				searching = False
+			else:
+				moves.append(((x + c), (y + c)))
+				c += 1
+
+		c = 1
+		searching = True
+		while(searching): # Checks down and left
+			if mainBoard.hasPiece((x - c, y + c)) == None:
+				break
+			if mainBoard.hasPiece((x - c, y + c)): # if there is a piece in the spot being checked, end searching
+				if mainBoard.spaces[y+c][x-c].color != mainBoard.spaces[y][x].color: # allow taking opponents
+					moves.append(((x - c), (y + c)))
+				searching = False
+			else:
+				moves.append(((x - c), (y + c)))
+				c += 1
+		return moves
+
+	def checkHorizontal(self, position):
+		searching = True
+		x, y = position
+		moves = []
+		reverse = 1
+		xDir = 1
+		yDir = 0
+		xc = 1 * xDir * reverse
+		yc = 1 * yDir * reverse
+		c = 0
+		stopInf = 0
+		
+		while searching:
+			print "(%d + %d, %d + %d)" % (x, xc, y, yc)
+			if mainBoard.hasPiece((x+xc, y+yc)) == None:
+				if yDir == 1:
+					reverse *= -1
+				temp = yDir
+				yDir = xDir
+				xDir = temp
+				xc = 1 * xDir * reverse
+				yc = 1 * yDir * reverse
+				c = 0
+				continue
+			if mainBoard.hasPiece((x+xc, y+yc)):
+				if mainBoard.spaces[y+yc][x+xc].color != mainBoard.spaces[y][x].color:
+					moves.append((x+xc, y+yc))
+				if yDir == 1:
+					reverse *= -1
+				temp = yDir
+				yDir = xDir
+				xDir = temp
+				c = 0
+			else:
+				moves.append((x+xc, y+yc))
+				c += 1
+			xc = (1+c) * xDir * reverse
+			yc = (1+c) * yDir * reverse
+
+			stopInf += 1
+			if stopInf > 20:
+				searching = False
+			if ((x+xc, y+yc) in moves):
+				searching = False
+
+		return moves
+		
+
+	def move(self, position):
+		x, y = position
+		if mainBoard.hasPiece(position):
+			takenPiece = mainBoard.spaces[y][x].identity
+			if takenPiece in wPieces: del wPieces[takenPiece]
+			if takenPiece in bPieces: del bPieces[takenPiece]
+		self.position = [x,y]
+
+		
 
 	# add defs checking horizontally, diagonally, specific spot to be called by each individual type of piece depending on how they work.
 
@@ -32,6 +147,37 @@ class Pawn(Piece):
 		self.identity = color[0] + "Pawn%s" % me
 		self.color = color
 		self.value = 1
+
+	def moves(self, position):
+		x, y = position
+		print position
+		moves = []
+		#Determine which side is being picked, I may have to remove this later
+		if mainBoard.spaces[y][x].color == "black":
+			modifier = 1
+		else:
+			modifier = -1
+
+		# Check for a simple forward movement
+		if not mainBoard.hasPiece((x, y + modifier)):
+			moves.append((x, y + modifier))
+
+		# Allow double space on first move
+		if modifier == 1 and y == 1:
+			moves.append((x, y + 2 * modifier))
+		if modifier == -1 and y == 6:
+			moves.append((x, y + 2 * modifier))
+		
+		# Testing to see if there are pieces at a diagonal to take
+		if mainBoard.hasPiece(((x + 1), (y + modifier))):
+			if mainBoard.spaces[y + modifier][x + 1].color != mainBoard.spaces[y][x].color:
+				moves.append((x + 1, y + modifier))
+		if mainBoard.hasPiece((x - 1, y + modifier)):
+			if mainBoard.spaces[y + modifier][x - 1].color != mainBoard.spaces[y][x].color:
+				moves.append((x - 1, y + modifier))
+
+		return moves
+			
 		
 class Bishop(Piece):
 	def __init__(self, me, color):
@@ -54,6 +200,10 @@ class Bishop(Piece):
 		self.color = color
 		self.value = 3
 
+	def moves(self, position):
+		return self.checkDiagonal(position)
+		
+
 class Knight(Piece):
 	def __init__(self, me, color):
 		if color == "black":
@@ -72,6 +222,35 @@ class Knight(Piece):
 		self.identity = color[0] + "Knight%s" % me
 		self.color = color
 		self.value = 3
+
+	def moves(self, position):
+		x, y = position
+		distances1 = [1,-1] 
+		distances2 = [2, -2]
+		moves = []
+		for i in distances1:
+			for j in distances2:
+				if mainBoard.hasPiece((x+i, y+j)) == None or (x+i, y+j) in moves:
+					continue
+				if mainBoard.hasPiece((x+i, y+j)):
+					if mainBoard.spaces[y+j][x+i].color != mainBoard.spaces[y][x].color:
+						moves.append((x+i,y+j))
+				else:
+					moves.append((x+i, y+j))
+
+		distances1 = [2,-2]
+		distances2 = [1, -1]
+		for i in distances1: # Can't think of a good way to do this once without random overlap
+			for j in distances2:
+				if mainBoard.hasPiece((x+i, y+j)) == None or (x+i, y+j) in moves:
+					continue
+				if mainBoard.hasPiece((x+i, y+j)):
+					if mainBoard.spaces[y+j][x+i].color != mainBoard.spaces[y][x].color:
+						moves.append((x+i, y+j))
+				else:
+					moves.append((x+i, y+j))
+		return moves
+				
 	
 class Rook(Piece):
 	def __init__(self, me, color):
@@ -91,6 +270,9 @@ class Rook(Piece):
 		self.identity = color[0] + "Rook%s" % me
 		self.color = color
 		self.value = 5
+	
+	def moves(self, position):
+		return self.checkHorizontal(position)
 
 class Queen(Piece):
 	def __init__(self, color):
@@ -107,6 +289,14 @@ class Queen(Piece):
 		self.color = color
 		self.value = 7
 
+	def moves(self, position):
+		moves = []
+		for i in self.checkHorizontal(position):
+			moves.append(i)
+		for i in self.checkDiagonal(position):
+			moves.append(i)
+		return moves
+
 class King(Piece):
 	def __init__(self, color):
 		if color == "black":
@@ -121,18 +311,41 @@ class King(Piece):
 		self.identity = color[0] + "King"
 		self.color = color
 		self.value = 10
+		
+	def moves(self, position):
+		moves = []
+		for i in [-1,0,1]:
+			for j in [-1,0,1]: #Same as Knight method but with only one space
+				if mainBoard.hasPiece((x+i, y+j)) == None or (x+i, y+j) in moves:
+					continue
+				if mainBoard.hasPiece((x+i, y+j)):
+					if mainBoard.spaces[y+j][x+i].color != mainBoard.spaces[y][x].color:
+						moves.append((x+i, y+j))
+				else:
+					moves.append((x+i, y+j))
+		return moves
 
 class Board(object):
 	def __init__(self):
 		self.spaces = [["","","","","","","",""], ["","","","","","","",""], ["","","","","","","",""], ["","","","","","","",""], ["","","","","","","",""], ["","","","","","","",""], ["","","","","","","",""], ["","","","","","","",""]]
+		self.tone = pygame.image.load('images\\move.png').convert_alpha()
 	
 	def refresh(self):
+		for i in range(8):
+			for j in range(8):
+				self.spaces[i][j] = ""
 		for i in bPieces.keys():
-			self.spaces[bPieces[i].y][bPieces[i].x] = bPieces[i]
+			self.spaces[bPieces[i].position[1]][bPieces[i].position[0]] = bPieces[i]
 		for i in wPieces.keys():
-			self.spaces[wPieces[i].y][wPieces[i].x] = wPieces[i]
-		for i in self.spaces:
-			print i
+			self.spaces[wPieces[i].position[1]][wPieces[i].position[0]] = wPieces[i]
+
+		screen.blit(board, (0,0))
+
+
+		screen.blit(self.tone, tuple([x*SPOT for x in selectedPiece]))
+		for i in possibleMoves:
+			# right here add a conversion from 0-7 values into 0-700 values
+			screen.blit(self.tone, tuple([x*SPOT for x in i]))
 
 		for i in wPieces.keys():
 			wPieces[i].show()
@@ -140,6 +353,18 @@ class Board(object):
 			bPieces[i].show()
 
 		pygame.display.flip()
+
+	def hasPiece(self, position):
+		x, y = position
+		if x < 0 or y < 0:
+			return None
+		try:
+			if self.spaces[y][x] != "":
+				return True
+			else:
+				return False
+		except IndexError:
+			return None
 		
 
 def resize(orig, magnitude):
@@ -151,8 +376,12 @@ def resize(orig, magnitude):
 
 pygame.init()
 
-#Conditions for Starting
+#Inital Variables
 screen = pygame.display.set_mode((boardSize, boardSize))
+selectedPiece = (9,9)
+possibleMoves = []
+possibleTakes = []
+turn = "white"
 
 #display board
 board = pygame.image.load("images\\brownChessBoard.png")
@@ -197,9 +426,12 @@ bPieces[temp.identity] = temp
 mainBoard = Board()
 mainBoard.refresh()
 
+# variables
 
 clock = pygame.time.Clock()
 playtime = 0.0
+
+print mainBoard.spaces[-2][5]
 
 
 while True:
@@ -207,6 +439,37 @@ while True:
 	if ev.type == pygame.QUIT:
 		pygame.quit()
 		break;
+	if ev.type == pygame.MOUSEBUTTONDOWN:
+		x, y = ev.pos
+		x /= SPOT
+		y /= SPOT
+		position = 	((x), (y))
 
+		if position == selectedPiece:
+			possibleMoves = []
+			selectedPiece = (9, 9) 
+
+		elif position in possibleMoves:
+			mainBoard.spaces[selectedPiece[1]][selectedPiece[0]].move(position)
+			if turn == "black":
+				turn = "white"
+			if turn == "white":
+				turn = "black"
+			possibleMoves = []
+			selectedPiece = (9, 9)
+
+		else:
+			try:
+				possibleMoves = []
+				if mainBoard.spaces[y][x].color == turn:
+					for i in mainBoard.spaces[y][x].moves(position):
+						possibleMoves.append(i)
+					print "possibleMoves: " + str(possibleMoves)
+				selectedPiece = position
+				
+			except AttributeError:
+				pass
+
+		mainBoard.refresh()
 	
 
