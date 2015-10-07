@@ -1,7 +1,5 @@
 import pygame
 
-#The constant multiplying and dividing by 100 is ridiculous. I need to make it more standard, possib
-
 
 #allow for possible size shifts
 SPOT = 100
@@ -125,6 +123,14 @@ class Piece(object):
 		x, y = position
 		if mainBoard.hasPiece(position):
 			takenPiece = mainBoard.spaces[y][x].identity
+			global playingGame
+			global winner
+			if takenPiece == "wKing":
+				playingGame = False
+				winner = "WHITE"
+			elif takenPiece == "bKing":
+				playingGame = False
+				winner = "BLACK"
 			if takenPiece in wPieces: del wPieces[takenPiece]
 			if takenPiece in bPieces: del bPieces[takenPiece]
 		self.position = [x,y]
@@ -311,6 +317,7 @@ class King(Piece):
 		self.identity = color[0] + "King"
 		self.color = color
 		self.value = 10
+
 		
 	def moves(self, position):
 		moves = []
@@ -377,11 +384,17 @@ def resize(orig, magnitude):
 pygame.init()
 
 #Inital Variables
+playingGame = True
 screen = pygame.display.set_mode((boardSize, boardSize))
 selectedPiece = (9,9)
 possibleMoves = []
 possibleTakes = []
 turn = "white"
+
+#Add Font/Color
+end = pygame.font.SysFont("Times", 100)
+black = (0,0,0)
+red = (255,0,0)
 
 #display board
 board = pygame.image.load("images\\brownChessBoard.png")
@@ -431,10 +444,8 @@ mainBoard.refresh()
 clock = pygame.time.Clock()
 playtime = 0.0
 
-print mainBoard.spaces[-2][5]
 
-
-while True:
+while playingGame:
 	ev = pygame.event.poll()
 	if ev.type == pygame.QUIT:
 		pygame.quit()
@@ -453,7 +464,7 @@ while True:
 			mainBoard.spaces[selectedPiece[1]][selectedPiece[0]].move(position)
 			if turn == "black":
 				turn = "white"
-			if turn == "white":
+			elif turn == "white":
 				turn = "black"
 			possibleMoves = []
 			selectedPiece = (9, 9)
@@ -461,6 +472,7 @@ while True:
 		else:
 			try:
 				possibleMoves = []
+				print turn
 				if mainBoard.spaces[y][x].color == turn:
 					for i in mainBoard.spaces[y][x].moves(position):
 						possibleMoves.append(i)
@@ -471,5 +483,14 @@ while True:
 				pass
 
 		mainBoard.refresh()
-	
+
+finale = end.render("%s WINS!" % winner, True, red)
+screen.blit(finale, (90, 350))
+pygame.display.flip()
+
+while True:
+	ev = pygame.event.poll()
+	if ev.type == pygame.QUIT:
+		pygame.quit()
+		break;
 
