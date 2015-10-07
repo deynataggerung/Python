@@ -84,7 +84,6 @@ class Piece(object):
 		stopInf = 0
 		
 		while searching:
-			print "(%d + %d, %d + %d)" % (x, xc, y, yc)
 			if mainBoard.hasPiece((x+xc, y+yc)) == None:
 				if yDir == 1:
 					reverse *= -1
@@ -156,7 +155,6 @@ class Pawn(Piece):
 
 	def moves(self, position):
 		x, y = position
-		print position
 		moves = []
 		#Determine which side is being picked, I may have to remove this later
 		if mainBoard.spaces[y][x].color == "black":
@@ -472,11 +470,9 @@ while playingGame:
 		else:
 			try:
 				possibleMoves = []
-				print turn
 				if mainBoard.spaces[y][x].color == turn:
 					for i in mainBoard.spaces[y][x].moves(position):
 						possibleMoves.append(i)
-					print "possibleMoves: " + str(possibleMoves)
 				selectedPiece = position
 				
 			except AttributeError:
