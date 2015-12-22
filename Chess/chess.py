@@ -389,17 +389,37 @@ def calculateMove():
 	iBlackPieces = deepcopy(bPieces)
 	iBoard = Board()
 	iBoard.refresh(iBlackPieces, iWhitePieces, False)
-	firstMoves = findPossibleMoves(iBlackPieces)
-	return firstMoves[random.randint(0, len(firstMoves) - 1)]
+	firstMoves = findPossibleMoves(iBlackPieces, iBoard)
+
+	bestMove = firstMoves[random.randint(0, len(firstMoves) - 1)]
+	highest = 0
+	for i in firstMoves:
+		if i.gain > highest:
+			highest = iBoard.spaces[y][x].value
+			bestMove = i
+	return bestMove
 	
 	
+class Move(object):
+	def __init__(self, board, mFrom, mTo):
+		self.mTo = mTo
+		self.mFrom = mFrom
+		if board.spaces[mTo[1]][mTo[0]] == "":
+			self.take = False
+			self.gain = 0
+		else:
+			self.take = True
+			self.gain = board.spaces[mTo[1]][mTo[0]].value
+		self.loss = 0
+		self.net = self.gain
+		
 	
 
-def findPossibleMoves(pieces):
+def findPossibleMoves(pieces, board):
 	totalMoves = []
 	for i in pieces.keys():
 		for f in pieces[i].moves():
-			totalMoves.append([f, pieces[i].position])
+			totalMoves.append(Move(board, pieces[i].position, f))
 	return totalMoves
 	
 
@@ -514,11 +534,8 @@ while playingGame:
 		mainBoard.refresh(bPieces, wPieces)
 
 	if turn == "black":
-		print "BLACK!"
 		bMove = calculateMove()
-		print bMove
-		print mainBoard.spaces
-		mainBoard.spaces[bMove[1][1]][bMove[1][0]].move(bMove[0])
+		mainBoard.spaces[bMove.mFrom[1]][bMove.mFrom[0]].move(bMove.mTo)
 		mainBoard.refresh(bPieces, wPieces)
 		turn = "white"
 
