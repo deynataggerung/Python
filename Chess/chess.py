@@ -18,17 +18,17 @@ class Piece(object):
 	def show(self): # shows the piece on the screen
 		screen.blit(self.display, (self.position[0]*SPOT, self.position[1]*SPOT))
 
-	def checkDiagonal(self): #position comes in as 0-7 values goes out the same way
+	def checkDiagonal(self, myBoard): #position comes in as 0-7 values goes out the same way
 		x, y = self.position
 		moves = []
 		c = 1
 		searching = True
 		
 		while(searching): # Checks up and right
-			if mainBoard.hasPiece((x + c, y - c)) == None:
+			if myBoard.hasPiece((x + c, y - c)) == None:
 				break
-			if mainBoard.hasPiece((x + c, y - c)): # if there is a piece in the spot being checked, end searching
-				if mainBoard.spaces[y-c][x+c].color != mainBoard.spaces[y][x].color: # allow taking opponents
+			if myBoard.hasPiece((x + c, y - c)): # if there is a piece in the spot being checked, end searching
+				if myBoard.spaces[y-c][x+c].color != myBoard.spaces[y][x].color: # allow taking opponents
 					moves.append(((x + c), (y - c)))
 				searching = False
 			else:
@@ -38,10 +38,10 @@ class Piece(object):
 		c = 1 #Important to reset my counters
 		searching = True
 		while(searching): # Checks up and left
-			if mainBoard.hasPiece((x - c, y - c)) == None:
+			if myBoard.hasPiece((x - c, y - c)) == None:
 				break
-			if mainBoard.hasPiece((x - c, y - c)): # if there is a piece in the spot being checked, end searching
-				if mainBoard.spaces[y-c][x-c].color != mainBoard.spaces[y][x].color: # allow taking opponents
+			if myBoard.hasPiece((x - c, y - c)): # if there is a piece in the spot being checked, end searching
+				if myBoard.spaces[y-c][x-c].color != myBoard.spaces[y][x].color: # allow taking opponents
 					moves.append(((x - c), (y - c)))
 				searching = False
 			else:
@@ -51,10 +51,10 @@ class Piece(object):
 		c = 1
 		searching = True
 		while(searching): # Checks down and right
-			if mainBoard.hasPiece((x + c, y + c)) == None:
+			if myBoard.hasPiece((x + c, y + c)) == None:
 				break
-			if mainBoard.hasPiece((x + c, y + c)): # if there is a piece in the spot being checked, end searching
-				if mainBoard.spaces[y+c][x+c].color != mainBoard.spaces[y][x].color: # allow taking opponents
+			if myBoard.hasPiece((x + c, y + c)): # if there is a piece in the spot being checked, end searching
+				if myBoard.spaces[y+c][x+c].color != myBoard.spaces[y][x].color: # allow taking opponents
 					moves.append(((x + c), (y + c)))
 				searching = False
 			else:
@@ -64,10 +64,10 @@ class Piece(object):
 		c = 1
 		searching = True
 		while(searching): # Checks down and left
-			if mainBoard.hasPiece((x - c, y + c)) == None:
+			if myBoard.hasPiece((x - c, y + c)) == None:
 				break
-			if mainBoard.hasPiece((x - c, y + c)): # if there is a piece in the spot being checked, end searching
-				if mainBoard.spaces[y+c][x-c].color != mainBoard.spaces[y][x].color: # allow taking opponents
+			if myBoard.hasPiece((x - c, y + c)): # if there is a piece in the spot being checked, end searching
+				if myBoard.spaces[y+c][x-c].color != myBoard.spaces[y][x].color: # allow taking opponents
 					moves.append(((x - c), (y + c)))
 				searching = False
 			else:
@@ -75,7 +75,7 @@ class Piece(object):
 				c += 1
 		return moves
 
-	def checkHorizontal(self):
+	def checkHorizontal(self, myBoard):
 		x, y = self.position
 		searching = True
 		moves = []
@@ -88,7 +88,7 @@ class Piece(object):
 		stopInf = 0
 		
 		while searching:
-			if mainBoard.hasPiece((x+xc, y+yc)) == None:
+			if myBoard.hasPiece((x+xc, y+yc)) == None:
 				if yDir == 1:
 					reverse *= -1
 				temp = yDir
@@ -98,8 +98,8 @@ class Piece(object):
 				yc = 1 * yDir * reverse
 				c = 0
 				continue
-			if mainBoard.hasPiece((x+xc, y+yc)):
-				if mainBoard.spaces[y+yc][x+xc].color != mainBoard.spaces[y][x].color:
+			if myBoard.hasPiece((x+xc, y+yc)):
+				if myBoard.spaces[y+yc][x+xc].color != myBoard.spaces[y][x].color:
 					moves.append((x+xc, y+yc))
 				if yDir == 1:
 					reverse *= -1
@@ -122,10 +122,10 @@ class Piece(object):
 		return moves
 		
 
-	def move(self, position):
+	def move(self, position, myBoard):
 		x, y = position
-		if mainBoard.hasPiece(position):
-			takenPiece = mainBoard.spaces[y][x].identity
+		if myBoard.hasPiece(position):
+			takenPiece = myBoard.spaces[y][x].identity
 			global playingGame
 			global winner
 			if takenPiece == "wKing":
@@ -159,7 +159,7 @@ class Pawn(Piece):
 		self.value = 1
 		self.moveCount = 0
 
-	def moves(self):
+	def moves(self, myBoard):
 		x, y = self.position
 		moves = []
 		#Determine which side is being picked, I may have to remove this later
@@ -169,18 +169,18 @@ class Pawn(Piece):
 			modifier = -1
 
 		# Check for a simple forward movement
-		if not mainBoard.hasPiece((x, y + modifier)):
+		if not myBoard.hasPiece((x, y + modifier)):
 			moves.append((x, y + modifier))
 			#check for double space on first move.
-			if self.moveCount == 0 and not mainBoard.hasPiece((x, y + 2 * modifier)):
+			if self.moveCount == 0 and not myBoard.hasPiece((x, y + 2 * modifier)):
 				moves.append((x, y + 2 * modifier))
 		
 		# Testing to see if there are pieces at a diagonal to take
-		if mainBoard.hasPiece(((x + 1), (y + modifier))):
-			if mainBoard.spaces[y + modifier][x + 1].color != mainBoard.spaces[y][x].color:
+		if myBoard.hasPiece(((x + 1), (y + modifier))):
+			if myBoard.spaces[y + modifier][x + 1].color != myBoard.spaces[y][x].color:
 				moves.append((x + 1, y + modifier))
-		if mainBoard.hasPiece((x - 1, y + modifier)):
-			if mainBoard.spaces[y + modifier][x - 1].color != mainBoard.spaces[y][x].color:
+		if myBoard.hasPiece((x - 1, y + modifier)):
+			if myBoard.spaces[y + modifier][x - 1].color != myBoard.spaces[y][x].color:
 				moves.append((x - 1, y + modifier))
 
 		return moves
@@ -208,8 +208,8 @@ class Bishop(Piece):
 		self.value = 3
 		self.moveCount = 0
 
-	def moves(self):
-		return self.checkDiagonal()
+	def moves(self, myBoard):
+		return self.checkDiagonal(myBoard)
 		
 
 class Knight(Piece):
@@ -232,17 +232,17 @@ class Knight(Piece):
 		self.value = 3
 		self.moveCount = 0
 
-	def moves(self):
+	def moves(self, myBoard):
 		x, y = self.position
 		distances1 = [1,-1] 
 		distances2 = [2, -2]
 		moves = []
 		for i in distances1:
 			for j in distances2:
-				if mainBoard.hasPiece((x+i, y+j)) == None or (x+i, y+j) in moves:
+				if myBoard.hasPiece((x+i, y+j)) == None or (x+i, y+j) in moves:
 					continue
-				if mainBoard.hasPiece((x+i, y+j)):
-					if mainBoard.spaces[y+j][x+i].color != mainBoard.spaces[y][x].color:
+				if myBoard.hasPiece((x+i, y+j)):
+					if myBoard.spaces[y+j][x+i].color != myBoard.spaces[y][x].color:
 						moves.append((x+i,y+j))
 					else:
 						continue
@@ -251,10 +251,10 @@ class Knight(Piece):
 
 		for j in distances1: # Can't think of a good way to do this once without random overlap
 			for i in distances2:
-				if mainBoard.hasPiece((x+i, y+j)) == None or (x+i, y+j) in moves:
+				if myBoard.hasPiece((x+i, y+j)) == None or (x+i, y+j) in moves:
 					continue
-				if mainBoard.hasPiece((x+i, y+j)):
-					if mainBoard.spaces[y+j][x+i].color != mainBoard.spaces[y][x].color:
+				if myBoard.hasPiece((x+i, y+j)):
+					if myBoard.spaces[y+j][x+i].color != myBoard.spaces[y][x].color:
 						moves.append((x+i, y+j))
 					else:
 						continue;
@@ -283,8 +283,8 @@ class Rook(Piece):
 		self.value = 5
 		self.moveCount = 0
 	
-	def moves(self):
-		return self.checkHorizontal()
+	def moves(self, myBoard):
+		return self.checkHorizontal(myBoard)
 
 class Queen(Piece):
 	def __init__(self, color):
@@ -302,11 +302,11 @@ class Queen(Piece):
 		self.value = 7
 		self.moveCount = 0
 
-	def moves(self):
+	def moves(self, myBoard):
 		moves = []
-		for i in self.checkHorizontal():
+		for i in self.checkHorizontal(myBoard):
 			moves.append(i)
-		for i in self.checkDiagonal():
+		for i in self.checkDiagonal(myBoard):
 			moves.append(i)
 		return moves
 
@@ -327,15 +327,15 @@ class King(Piece):
 		self.moveCount = 0
 
 		
-	def moves(self):
+	def moves(self, myBoard):
 		moves = []
 		x, y = self.position
 		for i in [-1,0,1]:
 			for j in [-1,0,1]: #Same as Knight method but with only one space
-				if mainBoard.hasPiece((x+i, y+j)) == None or (x+i, y+j) in moves:
+				if myBoard.hasPiece((x+i, y+j)) == None or (x+i, y+j) in moves:
 					continue
-				if mainBoard.hasPiece((x+i, y+j)):
-					if mainBoard.spaces[y+j][x+i].color != mainBoard.spaces[y][x].color:
+				if myBoard.hasPiece((x+i, y+j)):
+					if myBoard.spaces[y+j][x+i].color != myBoard.spaces[y][x].color:
 						moves.append((x+i, y+j))
 				else:
 					moves.append((x+i, y+j))
@@ -357,9 +357,9 @@ class Board(object):
 
 		screen.blit(board, (0,0))
 
-
-		screen.blit(self.tone, tuple([x*SPOT for x in selectedPiece]))
 		if actual:
+			screen.blit(self.tone, tuple([x*SPOT for x in selectedPiece]))
+
 			for i in possibleMoves:
 				# right here add a conversion from 0-7 values into 0-700 values
 				screen.blit(self.tone, tuple([x*SPOT for x in i]))
@@ -383,21 +383,42 @@ class Board(object):
 		except IndexError:
 			return None
 		
+def consequences(thisMove, myBoard, bPiece, wPiece, c):
+	myBoard.refresh(bPiece, wPiece, False)
+	myBoard.spaces[thisMove.mFrom[1]][thisMove.mFrom[0]].move(thisMove.mTo, myBoard)
+	myBoard.refresh(bPiece, wPiece, False)
+	if c % 2 == 0:
+		allMoves = findPossibleMoves(wPiece, myBoard)
+	else:
+		allMoves = findPossibleMoves(bPiece, myBoard)
+	if c == 1:
+		return thisMove.gain;
+	c += 1;
+	net = 0
+	for i in allMoves:
+		net += consequences(i, deepcopy(myBoard), deepcopy(bPiece), deepcopy(wPiece), c)
+	return thisMove.gain + net;
 
 def calculateMove():
-	iWhitePieces = deepcopy(wPieces) 
-	iBlackPieces = deepcopy(bPieces)
 	iBoard = Board()
-	iBoard.refresh(iBlackPieces, iWhitePieces, False)
-	firstMoves = findPossibleMoves(iBlackPieces, iBoard)
+	iBoard.refresh(bPieces, wPieces)
+	firstMoves = findPossibleMoves(bPieces, iBoard)
+	for i in firstMoves:
+		i.net = consequences(i, Board(), deepcopy(bPieces), deepcopy(wPieces), 0)
+		print i.mTo
+		print i.gain
+		print i.net
+		print
 
 	bestMove = firstMoves[random.randint(0, len(firstMoves) - 1)]
 	highest = 0
 	for i in firstMoves:
-		if i.gain > highest:
-			highest = iBoard.spaces[y][x].value
+		if i.net > highest:
+			highest = i.gain
 			bestMove = i
 	return bestMove
+
+
 	
 	
 class Move(object):
@@ -410,15 +431,20 @@ class Move(object):
 		else:
 			self.take = True
 			self.gain = board.spaces[mTo[1]][mTo[0]].value
-		self.loss = 0
 		self.net = self.gain
+
+	def addValue(worth):
+		if worth > 0:
+			self.gain += worth;
+		else:
+			self.loss += worth;
 		
 	
 
 def findPossibleMoves(pieces, board):
 	totalMoves = []
 	for i in pieces.keys():
-		for f in pieces[i].moves():
+		for f in pieces[i].moves(board):
 			totalMoves.append(Move(board, pieces[i].position, f))
 	return totalMoves
 	
@@ -514,7 +540,7 @@ while playingGame:
 			selectedPiece = (9, 9) 
 
 		elif position in possibleMoves: # If you want to move a piece
-			mainBoard.spaces[selectedPiece[1]][selectedPiece[0]].move(position)  #access the board and the piece that has been selected. Then update that piece's position
+			mainBoard.spaces[selectedPiece[1]][selectedPiece[0]].move(position, mainBoard)  #access the board and the piece that has been selected. Then update that piece's position
 			turn = "black" # pass off the move to black
 			possibleMoves = [] #clear
 			selectedPiece = (9, 9)
@@ -524,7 +550,7 @@ while playingGame:
 				testPiece = mainBoard.spaces[y][x]
 				possibleMoves = []
 				if mainBoard.spaces[y][x].color == turn:
-					for i in mainBoard.spaces[y][x].moves():
+					for i in mainBoard.spaces[y][x].moves(mainBoard):
 						possibleMoves.append(i)
 				selectedPiece = position
 				
@@ -535,7 +561,7 @@ while playingGame:
 
 	if turn == "black":
 		bMove = calculateMove()
-		mainBoard.spaces[bMove.mFrom[1]][bMove.mFrom[0]].move(bMove.mTo)
+		mainBoard.spaces[bMove.mFrom[1]][bMove.mFrom[0]].move(bMove.mTo, mainBoard)
 		mainBoard.refresh(bPieces, wPieces)
 		turn = "white"
 
