@@ -120,24 +120,6 @@ class Piece(object):
 				searching = False
 
 		return moves
-		
-
-	def move(self, position, myBoard):
-		x, y = position
-		if myBoard.hasPiece(position):
-			takenPiece = myBoard.spaces[y][x].identity
-			global playingGame
-			global winner
-			if takenPiece == "wKing":
-				playingGame = False
-				winner = "BLACK"
-			elif takenPiece == "bKing":
-				playingGame = False
-				winner = "WHITE"
-			if takenPiece in wPieces: del wPieces[takenPiece]
-			if takenPiece in bPieces: del bPieces[takenPiece]
-		self.position = [x,y]
-		self.moveCount += 1
 
 		
 
@@ -342,18 +324,20 @@ class King(Piece):
 		return moves
 
 class Board(object):
-	def __init__(self):
+	def __init__(self, anybPieces, anywPieces):
 		self.spaces = [["","","","","","","",""], ["","","","","","","",""], ["","","","","","","",""], ["","","","","","","",""], ["","","","","","","",""], ["","","","","","","",""], ["","","","","","","",""], ["","","","","","","",""]]
 		self.tone = pygame.image.load('images\\move.png').convert_alpha()
+		self.anybPieces = anybPieces
+		self.anywPieces = anywPieces
 	
-	def refresh(self, anybPieces, anywPieces, actual=True):
+	def refresh(self, actual=True):
 		for i in range(8):
 			for j in range(8):
 				self.spaces[i][j] = ""
-		for i in anybPieces.keys():
-			self.spaces[anybPieces[i].position[1]][anybPieces[i].position[0]] = anybPieces[i]
-		for i in anywPieces.keys():
-			self.spaces[anywPieces[i].position[1]][anywPieces[i].position[0]] = anywPieces[i]
+		for i in self.anybPieces.keys():
+			self.spaces[self.anybPieces[i].position[1]][self.anybPieces[i].position[0]] = self.anybPieces[i]
+		for i in self.anywPieces.keys():
+			self.spaces[self.anywPieces[i].position[1]][self.anywPieces[i].position[0]] = self.anywPieces[i]
 
 		screen.blit(board, (0,0))
 
@@ -364,10 +348,10 @@ class Board(object):
 				# right here add a conversion from 0-7 values into 0-700 values
 				screen.blit(self.tone, tuple([x*SPOT for x in i]))
 
-			for i in anywPieces.keys():
-				wPieces[i].show()
-			for i in anybPieces.keys():
-				bPieces[i].show()
+			for i in self.anywPieces.keys():
+				self.anywPieces[i].show()
+			for i in self.anybPieces.keys():
+				self.anybPieces[i].show()
 
 			pygame.display.flip()
 
@@ -382,17 +366,34 @@ class Board(object):
 				return False
 		except IndexError:
 			return None
+
+	def move(self, mFrom, mTo):
+		go = True
+		if self.hasPiece(mTo):
+			takenPiece = self.spaces[mTo[1]][mTo[0]].identity
+			global winner
+			if takenPiece == "wKing":
+				go = False
+				winner = "BLACK"
+			elif takenPiece == "bKing":
+				go = False
+				winner = "WHITE"
+			if takenPiece in self.anywPieces: del self.anywPieces[takenPiece]
+			if takenPiece in self.anybPieces: del self.anybPieces[takenPiece]
+		self.spaces[mFrom[1]][mFrom[0]].position = mTo
+		self.spaces[mFrom[1]][mFrom[0]].moveCount += 1
+		return go
 		
 def consequences(thisMove, myBoard, bPiece, wPiece, c):
-	myBoard.refresh(bPiece, wPiece, False)
-	myBoard.spaces[thisMove.mFrom[1]][thisMove.mFrom[0]].move(thisMove.mTo, myBoard)
-	myBoard.refresh(bPiece, wPiece, False)
+	myBoard.refresh(False)
+	myBoard.move(thisMove.mFrom, thisMove.mTo)
+	myBoard.refresh(False)
 	if c % 2 == 0:
-		allMoves = findPossibleMoves(wPiece, myBoard)
+		allMoves = findPossibleMoves(myBoard, "white")
 	else:
-		allMoves = findPossibleMoves(bPiece, myBoard)
+		allMoves = findPossibleMoves(myBoard, "black")
 	if c == 1:
-		return thisMove.gain;
+		return 0 - thisMove.gain;
 	c += 1;
 	net = 0
 	for i in allMoves:
@@ -400,21 +401,17 @@ def consequences(thisMove, myBoard, bPiece, wPiece, c):
 	return thisMove.gain + net;
 
 def calculateMove():
-	iBoard = Board()
-	iBoard.refresh(bPieces, wPieces)
-	firstMoves = findPossibleMoves(bPieces, iBoard)
+	iBoard = Board(bPieces, wPieces)
+	iBoard.refresh()
+	firstMoves = findPossibleMoves(iBoard, "black")
 	for i in firstMoves:
-		i.net = consequences(i, Board(), deepcopy(bPieces), deepcopy(wPieces), 0)
-		print i.mTo
-		print i.gain
-		print i.net
-		print
+		i.net = consequences(i, Board(deepcopy(bPieces), deepcopy(wPieces)), deepcopy(bPieces), deepcopy(wPieces), 0)
 
 	bestMove = firstMoves[random.randint(0, len(firstMoves) - 1)]
-	highest = 0
+	highest = -50
 	for i in firstMoves:
 		if i.net > highest:
-			highest = i.gain
+			highest = i.net
 			bestMove = i
 	return bestMove
 
@@ -441,11 +438,18 @@ class Move(object):
 		
 	
 
-def findPossibleMoves(pieces, board):
+def findPossibleMoves(board, side):
 	totalMoves = []
-	for i in pieces.keys():
-		for f in pieces[i].moves(board):
-			totalMoves.append(Move(board, pieces[i].position, f))
+	if side == "black":
+		for i in board.anybPieces.keys():
+			for f in board.anybPieces[i].moves(board):
+				totalMoves.append(Move(board, board.anybPieces[i].position, f))
+	elif side == "white":
+		for i in board.anywPieces.keys():
+			for f in board.anywPieces[i].moves(board):
+				totalMoves.append(Move(board, board.anywPieces[i].position, f))
+	else:
+		return null
 	return totalMoves
 	
 
@@ -513,10 +517,8 @@ wPieces[temp.identity] = temp
 temp = King("black")
 bPieces[temp.identity] = temp
 
-mainBoard = Board()
-mainBoard.refresh(bPieces, wPieces)
-for i in mainBoard.spaces:
-	print i
+mainBoard = Board(bPieces, wPieces)
+mainBoard.refresh()
 
 # variables
 
@@ -540,7 +542,7 @@ while playingGame:
 			selectedPiece = (9, 9) 
 
 		elif position in possibleMoves: # If you want to move a piece
-			mainBoard.spaces[selectedPiece[1]][selectedPiece[0]].move(position, mainBoard)  #access the board and the piece that has been selected. Then update that piece's position
+			mainBoard.move(selectedPiece, position)  #access the board and the piece that has been selected. Then update that piece's position
 			turn = "black" # pass off the move to black
 			possibleMoves = [] #clear
 			selectedPiece = (9, 9)
@@ -557,12 +559,12 @@ while playingGame:
 			except AttributeError:
 				print "Attribute Error"
 
-		mainBoard.refresh(bPieces, wPieces)
+		mainBoard.refresh()
 
 	if turn == "black":
 		bMove = calculateMove()
-		mainBoard.spaces[bMove.mFrom[1]][bMove.mFrom[0]].move(bMove.mTo, mainBoard)
-		mainBoard.refresh(bPieces, wPieces)
+		mainBoard.move(bMove.mFrom, bMove.mTo)
+		mainBoard.refresh()
 		turn = "white"
 
 finale = end.render("%s WINS!" % winner, True, red)
