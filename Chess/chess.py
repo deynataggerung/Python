@@ -1,6 +1,7 @@
 import pygame
 from copy import deepcopy
 import random
+import threading
 
 #ToDo: Bot that trash talks :P
 
@@ -383,41 +384,65 @@ class Board(object):
 		self.spaces[mFrom[1]][mFrom[0]].position = mTo
 		self.spaces[mFrom[1]][mFrom[0]].moveCount += 1
 		return go
-		
-def consequences(thisMove, myBoard, bPiece, wPiece, c):
-	myBoard.refresh(False)
-	myBoard.move(thisMove.mFrom, thisMove.mTo)
-	myBoard.refresh(False)
-	if c % 2 == 0:
-		allMoves = findPossibleMoves(myBoard, "white")
-	else:
-		allMoves = findPossibleMoves(myBoard, "black")
-	if c == 1:
-		return 0 - thisMove.gain;
-	c += 1;
-	net = 0
-	for i in allMoves:
-		net += consequences(i, deepcopy(myBoard), deepcopy(bPiece), deepcopy(wPiece), c)
-	return thisMove.gain + net;
+
+class myThread(threading.Thread):
+	def __init__(self, threadID, thisMove, myBoard, bPiece, wPiece, c, results):
+		threading.Thread.__init__(self)
+		self.threadID = threadID
+		self.thisMove = thisMove
+		self.myBoard = myBoard
+		self.bPiece = bPiece
+		self.wPiece = wPiece
+		self.c = c
+		self.results = results
+
+	def run(self):
+		print self.threadID
+		self.results[self.threadID] = consequences(self.thisMove, self.myBoard, self.bPiece, self.wPiece, self.c)
+
+def consequences(thisMove, myBoard, bPiece, wPiece, c): 
+ 	myBoard.refresh(False) 
+ 	myBoard.move(thisMove.mFrom, thisMove.mTo) 
+ 	myBoard.refresh(False) 
+ 	pygame.event.pump
+ 	net = thisMove.gain
+ 	if c % 2 == 0: 
+ 		allMoves = findPossibleMoves(myBoard, "white") 
+ 	else: 
+ 		allMoves = findPossibleMoves(myBoard, "black") 
+ 		net *= -1 
+ 	c += 1;
+ 	for i in allMoves:
+ 		if c == 2:
+ 			net += i.gain
+ 			break
+ 		net += consequences(i, deepcopy(myBoard), deepcopy(bPiece), deepcopy(wPiece), c) 
+ 	return net; 
+
 
 def calculateMove():
 	iBoard = Board(bPieces, wPieces)
 	iBoard.refresh()
-	firstMoves = findPossibleMoves(iBoard, "black")
-	for i in firstMoves:
-		i.net = consequences(i, Board(deepcopy(bPieces), deepcopy(wPieces)), deepcopy(bPieces), deepcopy(wPieces), 0)
+	allMoves = findPossibleMoves(iBoard, "black")
 
-	bestMove = firstMoves[random.randint(0, len(firstMoves) - 1)]
+	threads = [None for x in range(len(allMoves))]
+	results = [None for x in range(len(allMoves))]
+
+	for i in range(len(allMoves)):
+		threads[i] = myThread(i, allMoves[i], deepcopy(iBoard), deepcopy(bPieces), deepcopy(wPieces), 0, results)
+		threads[i].start()
+
+	for i in range(len(allMoves)):
+		threads[i].join()
+		allMoves[i].net = results[i]
+	bestMove = allMoves[random.randint(0, len(allMoves) - 1)]
 	highest = -50
-	for i in firstMoves:
+	for i in allMoves:
 		if i.net > highest:
 			highest = i.net
 			bestMove = i
 	return bestMove
 
-
-	
-	
 class Move(object):
 	def __init__(self, board, mFrom, mTo):
 		self.mTo = mTo
@@ -436,8 +461,6 @@ class Move(object):
 		else:
 			self.loss += worth;
 		
-	
-
 def findPossibleMoves(board, side):
 	totalMoves = []
 	if side == "black":
